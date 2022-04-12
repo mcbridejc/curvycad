@@ -15,16 +15,18 @@ and implementing new `emit_line`, `emit_arc`, and `emit_via` methods.
 
 The path can be created in a CAD tool like Fusion 360 or LibreCAD, and exported as a
 DXF, then imported to a path via the `curvycad.read_dxf` function. However, there are
-some constraints on what can do in the DXF.
+some constraints on what can go in the DXF.
 
 For one thing, no extra lines. All lines must be connected to form a continuous path.
 It can be closed, or open.
 
 All segments have to be tangent to the previous segment. This means that lines must
-be connected via an arc, and you must contrain the arc to be tangent to the line
-on both sides.
+be connected via an arc, and you must constrain the arc to be tangent to the line
+on both sides in your sketch.
 
-Only arcs and lines are supported; splines, polylines, etc are not.
+Only arcs and lines are supported; splines, polylines, etc are not. I don't know
+how robust this will be to different DXF files created by different tools. I used
+it successfully on a DXF exported from Fusion 360, and that's all I can say.
 
 ## Path Elements
 
@@ -68,6 +70,10 @@ RAIL_WIDTH = 1.0
 VIA_DRILL = 0.3
 VIA_PAD = 0.6
 
+# This list defines the periodically repeated pattern of objects. 
+# All distances along the path are normalized to the range (0 to 1), and
+# they will be scaled by the provided `pitch` value later. Distances
+# orthogonal to the path are given in absolute terms.
 segment = [
     # Draw two parallel lines 5mm on either side of the path in top layer
     # They cover the entire length of the segment (0 to 1)
@@ -100,7 +106,11 @@ class TrackLayout(pcbnew.ActionPlugin):
         # Create the builder
         track = cc.KicadTrackBuilder(PITCH, segment, board)
         # Layout the path defined in `guide`
+        # The pitch will be adjusted slightly as necessary to ensure that the
+        # last pattern ends at the end of the path. This ensures that in a closed
+        # path there is no discontinuity.
         track.draw_path(guide)
+        
 
 
 TrackLayout().register()
