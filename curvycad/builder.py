@@ -24,12 +24,12 @@ def warp_point_on_arc(p, radius):
 
 class TrackBuilder(object):
     def __init__(self, pitch, pattern):
-        """The TrackBuilder class contains all of the logic for transforming 
+        """The TrackBuilder class contains all of the logic for transforming
         a pattern to follow a path. It is abstract, so it cannot be used
         directly. An implementation must implement `emit_line`, `emit_arc`, and
         `emit_via` to be used. The default implementation is KicadTrackBuilder.
 
-        Arguments: 
+        Arguments:
             - pitch: The default distance-along-path which will be
             occupied by one pattern cycle, in mm.
             - pattern: A list of PathElements (Start, Straight, Curve)
@@ -47,7 +47,7 @@ class TrackBuilder(object):
 
     def draw_path(self, path):
         """Draw the pattern along the provided path
-        
+
         Note that the configured pitch will be adjusted so that the full track
         length is a multiple of the pitch, so that all patterns are completed.
         """
@@ -85,7 +85,7 @@ class TrackBuilder(object):
                 seg_start = 0.0
                 if distance_remaining / pitch < 1.0 - 1e-12:
                     # End mid cycle
-                    seg_end = distance_remaining / pitch 
+                    seg_end = distance_remaining / pitch
                     self.cycle_pos = seg_end + 1e-14
                 else:
                     # Room to finish the cycle
@@ -116,7 +116,7 @@ class TrackBuilder(object):
                 seg_start = 0.0
                 if distance_remaining / pitch < 1.0 - 1e-12:
                     # End mid cycle
-                    seg_end = distance_remaining / pitch 
+                    seg_end = distance_remaining / pitch
                     self.cycle_pos = seg_end + 1e-14
                 else:
                     # Room to finish the cycle
@@ -128,7 +128,7 @@ class TrackBuilder(object):
             self.pos += rotate(warp_point_on_arc((distance_added, 0.0), radius * np.sign(angle)), self.theta)
             self.theta += np.sign(angle) * distance_added / radius
             distance_remaining -= distance_added
-        
+
     def __laydown_straight_cycle(self, seg_start, seg_end, pitch):
         for el in self.pattern:
             if isinstance(el, ParallelLine):
@@ -157,7 +157,7 @@ class TrackBuilder(object):
                     p = ((el.distance - seg_start) * self.pitch, el.transverse)
                     p = rotate(p, self.theta) + self.pos
                     self.emit_via(p, el.drill, el.pad)
-    
+
     def __laydown_curve_cycle(self, seg_start, seg_end, pitch, radius, angle):
         for el in self.pattern:
             if isinstance(el, ParallelLine):
@@ -175,7 +175,7 @@ class TrackBuilder(object):
                 start = warp_point_on_arc(start, radius * np.sign(angle))
                 end = warp_point_on_arc(end, radius * np.sign(angle))
                 mid = warp_point_on_arc(((start[0] + end[0])/2, el.offset), radius * np.sign(angle))
-                
+
                 # Transform into current board coordinates
                 start = rotate(start, self.theta) + self.pos
                 end = rotate(end, self.theta) + self.pos
@@ -187,11 +187,11 @@ class TrackBuilder(object):
                     # Line in local coordinates on arc
                     p0 = warp_point_on_arc(((el.offset - seg_start) * self.pitch, el.start), radius * np.sign(angle))
                     p1 = warp_point_on_arc(((el.offset - seg_start) * self.pitch, el.end), radius * np.sign(angle))
-                    
+
                     # Transform into board coordinates
                     p0 = rotate(p0, self.theta) + self.pos
                     p1 = rotate(p1, self.theta) + self.pos
-                    
+
                     self.emit_line(p0, p1, el.width, el.layer)
             elif isinstance(el, Via):
                 if el.distance >= seg_start and el.distance <= seg_end:
@@ -220,12 +220,12 @@ class TrackBuilder(object):
                     p = rotate(p, self.theta) + self.pos
                     self.emit_via(p, el.drill, el.pad)
             self.pos += rotate(np.array((1.0, 0)) * self.pitch, self.theta)
-        
+
     def draw_arc(self, radius, angle):
         """Draw a curved section
-        
+
         Sections must always be drawn with complete phase cycles, so radius
-        may be rounded to achieve this. 
+        may be rounded to achieve this.
         To get exact radius, angle*radius must be equal to n * pitch, where n
         is an integer.
         """
@@ -244,7 +244,7 @@ class TrackBuilder(object):
                     start = warp_point_on_arc((el.start*self.pitch, el.offset), radius * np.sign(angle))
                     end = warp_point_on_arc((el.end*self.pitch, el.offset), radius * np.sign(angle))
                     mid = warp_point_on_arc(((el.start + el.end)/2 * self.pitch, el.offset), radius * np.sign(angle))
-                    
+
                     # Transform into current board coordinates
                     start = rotate(start, self.theta) + self.pos
                     end = rotate(end, self.theta) + self.pos
@@ -255,11 +255,11 @@ class TrackBuilder(object):
                     # Line in local coordinates on arc
                     p0 = warp_point_on_arc((el.offset * self.pitch, el.start), radius * np.sign(angle))
                     p1 = warp_point_on_arc((el.offset * self.pitch, el.end), radius * np.sign(angle))
-                    
+
                     # Transform into board coordinates
                     p0 = rotate(p0, self.theta) + self.pos
                     p1 = rotate(p1, self.theta) + self.pos
-                    
+
                     self.emit_line(p0, p1, el.width, el.layer)
                 elif isinstance(el, Via):
                     p = warp_point_on_arc((el.distance * self.pitch, el.transverse), radius * np.sign(angle))
@@ -285,13 +285,18 @@ class KicadTrackBuilder(TrackBuilder):
         # avoid the dependency if another type of builder is used
         global pcbnew
         pcbnew = __import__('pcbnew', globals(), locals())
+        self.routing_layers = [pcbnew.F_Cu, pcbnew.B_Cu, pcbnew.In1_Cu, pcbnew.In2_Cu, pcbnew.In3_Cu, pcbnew.In4_Cu, pcbnew.In5_Cu, pcbnew.In6_Cu, pcbnew.In7_Cu, pcbnew.In8_Cu]
         super().__init__(pitch, pattern)
         self.board = board
         self.group = pcbnew.PCB_GROUP(self.board)
         self.board.Add(self.group)
-    
+
     def emit_line(self, p0, p1, width, layer):
-        track = pcbnew.PCB_TRACK(self.board)
+
+        if layer in self.routing_layers:
+            track = pcbnew.PCB_TRACK(self.board)
+        else:
+            track = pcbnew.PCB_SHAPE(self.board, pcbnew.PCB_SHAPE_T, pcbnew.SHAPE_T_SEGMENT)
         track.SetStart(self.__pcbpoint(p0))
         track.SetEnd(self.__pcbpoint(p1))
         track.SetWidth(int(width * 1e6))
@@ -300,10 +305,15 @@ class KicadTrackBuilder(TrackBuilder):
         self.group.AddItem(track)
 
     def emit_arc(self, start, mid, end, width, layer):
-        track = pcbnew.PCB_ARC(self.board)
-        track.SetStart(self.__pcbpoint(start))
-        track.SetMid(self.__pcbpoint(mid))
-        track.SetEnd(self.__pcbpoint(end))
+        if layer in self.routing_layers:
+            track = pcbnew.PCB_ARC(self.board)
+            track.SetStart(self.__pcbpoint(start))
+            track.SetMid(self.__pcbpoint(mid))
+            track.SetEnd(self.__pcbpoint(end))
+        else:
+            track = pcbnew.PCB_SHAPE(self.board, pcbnew.PCB_SHAPE_T, pcbnew.SHAPE_T_ARC)
+            track.SetArcGeometry(self.__pcbpoint(start), self.__pcbpoint(mid), self.__pcbpoint(end))
+
         track.SetWidth(int(width * 1e6))
         track.SetLayer(layer)
         self.board.Add(track)
