@@ -15,7 +15,7 @@ class Start(PathElement):
         return 0.0
 
     def __repr__(self):
-        return f"Start(location={self.location}, theta={self.theta}"
+        return f"Start(location={self.location}, theta={self.theta})"
 
 class Straight(PathElement):
     def __init__(self, length):
@@ -30,7 +30,7 @@ class Straight(PathElement):
         self._length = val
 
     def __repr__(self):
-        return f"Straight(length={self._length}"
+        return f"Straight(length={self._length})"
 
 class Curve(PathElement):
     def __init__(self, angle, radius):

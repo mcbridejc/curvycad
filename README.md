@@ -24,9 +24,9 @@ All segments have to be tangent to the previous segment. This means that lines m
 be connected via an arc, and you must constrain the arc to be tangent to the line
 on both sides in your sketch.
 
-Only arcs and lines are supported; splines, polylines, etc are not. I don't know
-how robust this will be to different DXF files created by different tools. I used
-it successfully on a DXF exported from Fusion 360, and that's all I can say.
+Arcs, Lines, and LWPolylines are supported; splines, polylines, and others are not. I don't know how
+robust this will be to different DXF files created by different tools. I've only used it with files
+exported from Fusion 360, and it seems to export either Arcs and Lines, or one LWPolyline.
 
 ## Path Elements
 

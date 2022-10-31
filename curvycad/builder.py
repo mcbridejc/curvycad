@@ -21,7 +21,6 @@ def warp_point_on_arc(p, radius):
     p = (0.0, radius + v)
     return rotate(p, theta) - (0.0, radius)
 
-
 class TrackBuilder(object):
     def __init__(self, pitch, pattern):
         """The TrackBuilder class contains all of the logic for transforming
@@ -42,6 +41,8 @@ class TrackBuilder(object):
         self.cycle_pos = 0.0
 
     def set_location(self, p, theta):
+        if len(p) != 2:
+            raise ValueError(f"Position must be a sequence of length 2, not {p}")
         self.pos = np.array(p, dtype=np.float64)
         self.theta = float(theta)
 
